@@ -23,8 +23,8 @@
 
 // Use a static data size for simplicity
 //
-#define DATA_SIZE (1<<20) // As much data as you can allocate
-#define SCALE (1<<10)
+#define DATA_SIZE (1<<10) // As much data as you can allocate
+#define SCALE (1<<4)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -37,12 +37,11 @@ const char *KernelSource = "";
 int read_kernel_file(char *file_path, char **program_buffer, int *program_size) {
     FILE * program_handle;
     program_handle = fopen(file_path, "r");
-    log_debug(file_path);
     if (program_handle == NULL) {
-        log_debug("ERROR: File %s cannot be opened! Errorno = %d\n");
+        printf("ERROR: File %s cannot be opened!\n", file_path);
         return errno;
     }
-    log_debug("file opened successfully");
+    log_debug2("file %s opened successfully", file_path);
     fseek(program_handle, 0, SEEK_END);
     log_debug("seek successful")
     *program_size = ftell(program_handle);
@@ -53,8 +52,7 @@ int read_kernel_file(char *file_path, char **program_buffer, int *program_size) 
     log_debug2("Program size is %d.", *program_size);
     log_debug("Initializing read bufferers successful")
     fread(*program_buffer, sizeof(char), *program_size, program_handle);
-    log_debug(program_buffer[0]);
-    log_debug("Reading streams succeussful")
+    log_debug2("Reading streams successful\n%s", *program_buffer);
     int res = fclose(program_handle);
     if (res == EOF) {
         log_debug("closing streams failed.");
@@ -130,11 +128,43 @@ int main(int argc, char** argv) {
     *num_platforms = 0;
     log_debug("Going to query platforms...");
     err = clGetPlatformIDs(100, platform_ids, num_platforms);
-    err = CL_SUCCESS;
+
+    printf("Number of platforms = %d\n", *num_platforms);
+
+    void * param_value;
+    size_t param_size = 1024;
+    param_value = malloc(param_size);
+    size_t param_size_ret = 0;
+
+    clGetPlatformInfo(platform_ids[0], CL_PLATFORM_NAME, param_size,
+            param_value, &param_size_ret);
+    log_debug2("CL_PLATFORM_NAME size %d", (int ) param_size_ret);
+    log_debug2("CL_PLATFORM_NAME %s", (char * ) param_value);
+
+    clGetPlatformInfo(platform_ids[0], CL_PLATFORM_VENDOR, param_size,
+            param_value, &param_size_ret);
+    log_debug2("CL_PLATFORM_VENDOR size %d", (int ) param_size_ret);
+    log_debug2("CL_PLATFORM_VENDOR %s", (char * ) param_value);
+
+    clGetPlatformInfo(platform_ids[0], CL_PLATFORM_PROFILE, param_size,
+            param_value, &param_size_ret);
+    log_debug2("CL_PLATFORM_PROFILE size %d", (int ) param_size_ret);
+    log_debug2("CL_PLATFORM_PROFILE %s", (char * ) param_value);
+
+    clGetPlatformInfo(platform_ids[0], CL_PLATFORM_VERSION, param_size,
+            param_value, &param_size_ret);
+    log_debug2("CL_PLATFORM_VERSION size %d", (int ) param_size_ret);
+    log_debug2("CL_PLATFORM_VERSION %s", (char * ) param_value);
+
+    clGetPlatformInfo(platform_ids[0], CL_PLATFORM_EXTENSIONS, param_size,
+            param_value, &param_size_ret);
+    log_debug2("CL_PLATFORM_EXTENSIONS size %d", (int ) param_size_ret);
+    log_debug2("CL_PLATFORM_EXTENSIONS %s", (char * ) param_value);
+
+    //    err = CL_SUCCESS;
     log_debug2("Platforms queried successfully. %d found.", *num_platforms);
     if (err != CL_SUCCESS) {
-        log_debug2("Error: (Error code: %d) Failed to create a device group!",
-                err);
+        printf("Error: (Error code: %d) Failed to get platform IDs!\n", err);
         return EXIT_FAILURE;
     }
 
@@ -142,20 +172,29 @@ int main(int argc, char** argv) {
         log_debug("No platform was found.");
         return EXIT_FAILURE;
     }
-    int gpu = 1;
-    err = clGetDeviceIDs(platform_ids[0],
-            gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+    int *device_count;
+    device_count = (int *) malloc(sizeof(int));
+    *device_count = 10;
+    int gpu = CL_DEVICE_TYPE_GPU; // CL_DEVICE_TYPE_ALL; //CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU
+    err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_ALL, 1, &device_id,
+            device_count);
+    log_debug2("device_count = %d\n", *device_count);
     if (err != CL_SUCCESS) {
-        log_debug2("Error: (Error code: %d) Failed to create a device group!",
+        printf("Error: (Error code: %d) Failed to create a device group!\n",
                 err);
         return EXIT_FAILURE;
     }
+
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, param_size,
+            param_value, &param_size_ret);
+    log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS size %d", (int ) param_size_ret);
+    log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS %d", *((int *) param_value));
 
     // Create a compute context
     //
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!context) {
-        log_debug("Error: Failed to create a compute context!");
+        printf("Error: Failed to create a compute context!");
         return EXIT_FAILURE;
     }
 
@@ -163,7 +202,7 @@ int main(int argc, char** argv) {
     //
     commands = clCreateCommandQueue(context, device_id, 0, &err);
     if (!commands) {
-        log_debug("Error: Failed to create a command commands!");
+        printf("Error: Failed to create a command commands!\n");
         return EXIT_FAILURE;
     }
 
@@ -173,7 +212,7 @@ int main(int argc, char** argv) {
     program = clCreateProgramWithSource(context, 1,
             (const char **) &KernelSource, NULL, &err);
     if (!program) {
-        log_debug("Error: Failed to create compute program!");
+        printf("Error: Failed to create compute program!");
         return EXIT_FAILURE;
     }
 
@@ -184,21 +223,20 @@ int main(int argc, char** argv) {
         size_t len;
         char buffer[2048];
 
-        log_debug("Error: Failed to build program executable!");
+        printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG,
                 sizeof(buffer), buffer, &len);
-        log_debug2("%s\n", buffer);
-        exit(1);
+        printf("%s\n", buffer);
+        return EXIT_FAILURE;
     }
 
     // Create the compute kernel in the program we wish to run
     //
     kernel = clCreateKernel(program, "hash_join", &err);
     if (!kernel || err != CL_SUCCESS) {
-        log_debug("Error: Failed to create compute kernel!\n");
+        printf("Error: Failed to create compute kernel!\n");
         exit(1);
     }
-
 
     clock_t begin = clock();
 
@@ -216,7 +254,7 @@ int main(int argc, char** argv) {
             sizeof(char) * DATA_SIZE, NULL, NULL);
     /**/
     if (!d_build_buffer || !d_probe_buffer || !d_join_result_buffer) {
-        log_debug2("Error: (%d) Failed to allocate device memory!\n", err);
+        printf("Error: (%d) Failed to allocate device memory!\n", err);
         exit(1);
     }
 
@@ -224,8 +262,8 @@ int main(int argc, char** argv) {
     err = clEnqueueWriteBuffer(commands, d_build_buffer, CL_TRUE, 0,
             sizeof(int) * count, build_data, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
-        log_debug("Error: Failed to write to source array!\n");
-        exit(1);
+        printf("Error: Failed to write to source array!\n");
+        return EXIT_FAILURE;
     }
 
     for (i = 0; i < SCALE; i++) {
@@ -236,8 +274,8 @@ int main(int argc, char** argv) {
                 sizeof(int) * count, &probe_data[i * probe_size], 0, NULL,
                 NULL);
         if (err != CL_SUCCESS) {
-            log_debug("Error: Failed to write to source array!\n");
-            exit(1);
+            printf("Error: Failed to write to source array!\n");
+            return EXIT_FAILURE;
         }
 
         // Set the arguments to our compute kernel
@@ -249,8 +287,8 @@ int main(int argc, char** argv) {
         err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), &build_size);
         err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &d_join_result_buffer);
         if (err != CL_SUCCESS) {
-            log_debug2("Error: Failed to set kernel arguments! %d\n", err);
-            exit(1);
+            printf("Error: Failed to set kernel arguments! %d\n", err);
+            return EXIT_FAILURE;
         }
 
         // Get the maximum work group size for executing the kernel on the device
@@ -258,9 +296,9 @@ int main(int argc, char** argv) {
         err = clGetKernelWorkGroupInfo(kernel, device_id,
         CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
         if (err != CL_SUCCESS) {
-            log_debug2("Error: Failed to retrieve kernel work group info! %d\n",
+            printf("Error: Failed to retrieve kernel work group info! %d\n",
                     err);
-            exit(1);
+            return EXIT_FAILURE;
         }
 
         // Execute the kernel over the entire range of our 1d input data set
@@ -271,7 +309,7 @@ int main(int argc, char** argv) {
                 0,
                 NULL, NULL);
         if (err) {
-            log_debug("Error: Failed to execute kernel!\n");
+            printf("Error: Failed to execute kernel!\n");
             return EXIT_FAILURE;
         }
 
@@ -285,16 +323,14 @@ int main(int argc, char** argv) {
                 sizeof(char) * count, &results[i * DATA_SIZE], 0, NULL,
                 NULL);
         if (err != CL_SUCCESS) {
-            log_debug2("Error: Failed to read output array! %d\n", err);
+            printf("Error: Failed to read output array! %d\n", err);
             exit(1);
         }
     }
 
-
     clock_t end = clock();
 
-
-    double elapsed_secs = (double) (end-begin) / CLOCKS_PER_SEC;
+    double elapsed_secs = (double) (end - begin) / CLOCKS_PER_SEC;
 
     // Validate our results
     //

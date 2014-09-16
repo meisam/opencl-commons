@@ -3,7 +3,7 @@ __kernel void hash_join( __global int* probe_column, const unsigned int probe_co
     int thread_idx = get_global_id(0);
     join_result[thread_idx] = build_column[thread_idx] == probe_column[thread_idx];
 }
-
+/*
 __kernel void parallel_merge_sort(__global int* input, const unsigned int count, _global int* output) {
     int thread_idx = get_global_id(0);
 
@@ -31,7 +31,7 @@ __kernel void merge(__global int* input, const unsigned int start, const unsigne
     }
 }
 
-/*
+
  // Sort kernels
  // EB Jun 2011
 

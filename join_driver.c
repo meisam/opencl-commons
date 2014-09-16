@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     log_debug("Going to query platforms...");
     err = clGetPlatformIDs(100, platform_ids, num_platforms);
 
-    printf("Number of platforms = %d\n", *num_platforms);
+    log_debug2("Number of platforms = %d", *num_platforms);
 
     void * param_value;
     size_t param_size = 1024;
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
     clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, param_size,
             param_value, &param_size_ret);
     log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS size %d", (int ) param_size_ret);
-    log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS %d", *((int *) param_value));
+    log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS %d", *((int * ) param_value));
 
     // Create a compute context
     //

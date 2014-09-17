@@ -62,7 +62,146 @@ int read_kernel_file(char *file_path, char **program_buffer, int *program_size) 
     return 0;
 }
 
+enum db_type {
+    DECIMAL, STRING, FLOAT, DATETIME
+};
+
+struct column_t {
+    char *column_name;
+    int column_index;
+    enum db_type column_type;
+    int lenght;
+};
+
+struct table_schema_t {
+    char *name;
+    int column_count;
+    struct column_t* columns;
+};
+
+struct table_schema_t* get_part_table_shcema() {
+//    PART|P_PARTKEY:INTEGER|P_NAME:TEXT:22|P_MFGR:TEXT:6|P_CATEGORY:TEXT:7|P_BRAND1:TEXT:9|P_COLOR:TEXT:11|P_TYPE:TEXT:25|P_SIZE:INTEGER|P_CONTAINER:TEXT:10
+    struct column_t *col0;
+    col0 = (struct column_t *) malloc(sizeof(struct column_t));
+    col0->column_name = "P_PARTKEY";
+    col0->column_index = 0;
+    col0->column_type = DECIMAL;
+    col0->lenght = 4;
+
+    struct column_t *col1;
+    col1 = (struct column_t *) malloc(sizeof(struct column_t));
+    col1->column_name = "P_NAME";
+    col1->column_index = 1;
+    col1->column_type = STRING;
+    col1->lenght = 22;
+
+    struct column_t *col2;
+    col2 = (struct column_t *) malloc(sizeof(struct column_t));
+    col2->column_name = "P_MFGR";
+    col2->column_index = 2;
+    col2->column_type = STRING;
+    col2->lenght = 6;
+
+    struct column_t *col3;
+    col3 = (struct column_t *) malloc(sizeof(struct column_t));
+    col3->column_name = "P_CATEGORY";
+    col3->column_index = 3;
+    col3->column_type = DECIMAL;
+    col3->lenght = 7;
+
+    struct column_t *all_columns;
+    all_columns = (struct column_t *) malloc(sizeof(struct column_t) * 4);
+    all_columns[0] = *col0;
+    all_columns[1] = *col1;
+    all_columns[2] = *col2;
+    all_columns[3] = *col3;
+
+    struct table_schema_t *part_table;
+
+    part_table = (struct table_schema_t *) malloc(
+            sizeof(struct table_schema_t));
+    part_table->name = "PART";
+    part_table->column_count = 4;
+    part_table->columns = all_columns;
+
+    return part_table;
+}
+
+struct table_schema_t* get_lineorder_table_shcema() {
+//  LINEORDER|LO_ORDERKEY:INTEGER|LO_LINENUMBER:INTEGER|LO_CUSTKEY:INTEGER|LO_PARTKEY:INTEGER|LO_SUPPKEY:INTEGER|LO_ORDERDATE:DATE|LO_ORDERPRIORITY:TEXT:16|LO_SHIPPRIORITY:TEXT:1|LO_QUANTITY:INTEGER|LO_EXTENDEDPRICE:INTEGER|LO_ORDTOTALPRICE:INTEGER|LO_DISCOUNT:INTEGER|LO_REVENUE:INTEGER|LO_SUPPLYCOST:INTEGER|LO_TAX:INTEGER|LO_COMMITDATE:DATE|LO_SHIPMODE:TEXT:10
+    struct column_t *col0;
+    col0 = (struct column_t *) malloc(sizeof(struct column_t));
+    col0->column_name = "LO_ORDERKEY";
+    col0->column_index = 0;
+    col0->column_type = DECIMAL;
+    col0->lenght = 4;
+
+    struct column_t *col1;
+    col1 = (struct column_t *) malloc(sizeof(struct column_t));
+    col1->column_name = "LO_LINENUMBER";
+    col1->column_index = 1;
+    col1->column_type = DECIMAL;
+    col1->lenght = 4;
+
+    struct column_t *col2;
+    col2 = (struct column_t *) malloc(sizeof(struct column_t));
+    col2->column_name = "LO_CUSTKEYE";
+    col2->column_index = 2;
+    col2->column_type = DECIMAL;
+    col2->lenght = 4;
+
+    struct column_t *col3;
+    col3 = (struct column_t *) malloc(sizeof(struct column_t));
+    col3->column_name = "LO_PARTKEY";
+    col3->column_index = 3;
+    col3->column_type = DECIMAL;
+    col3->lenght = 4;
+
+    struct column_t *all_columns;
+    all_columns = (struct column_t *) malloc(sizeof(struct column_t) * 4);
+    all_columns[0] = *col0;
+    all_columns[1] = *col1;
+    all_columns[2] = *col2;
+    all_columns[3] = *col3;
+
+    struct table_schema_t *lineorder_table;
+
+    lineorder_table = (struct table_schema_t *) malloc(
+            sizeof(struct table_schema_t));
+    lineorder_table->name = "LINEORDER";
+    lineorder_table->column_count = 4;
+    lineorder_table->columns = all_columns;
+
+    return lineorder_table;
+}
+
+int read_column(struct table_schema_t schema, int column_index, char *path) {
+    FILE * column_file;
+    char *full_path;
+    int path_lenght = strlen(path) + strlen("/") + strlen(schema.name) + 1;
+    full_path = (char *) malloc(sizeof(char) * path_lenght);
+    strcpy(full_path, path);
+    strcat(full_path, "/");
+    strcat(full_path, schema.name);
+    full_path[path_lenght - 1] = (char) ('0' + column_index);
+    printf("FullPath is %s\n", full_path);
+    column_file = fopen(full_path, "r");
+    return -1;
+}
+
+int read_table(struct table_schema_t schema, char *path) {
+    int column_index = 0;
+    for (column_index = 0; column_index < schema.column_count; column_index++) {
+        read_column(schema, column_index, path);
+    }
+    return -1;
+}
+
 int main(int argc, char** argv) {
+
+    struct table_schema_t *lineorder_table = get_lineorder_table_shcema();
+    read_table(*lineorder_table,
+            "../ssdb");
 
     log_debug("Start of execution.")
     int err;                            // error code returned from API calls
@@ -97,8 +236,8 @@ int main(int argc, char** argv) {
     cl_mem d_probe_buffer;            // device memory used for the output array
     cl_mem d_join_result_buffer;      // device memory used for the output array
 
-    // Fill our data set with random int values
-    //
+// Fill our data set with random int values
+//
     log_debug("Going to create arrays");
     int i = 0;
     unsigned int count = DATA_SIZE;
@@ -114,9 +253,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    // Connect to a compute device
-    //
-    // Meisam: NVIDIA devices do not accept NULL as platform ID
+// Connect to a compute device
+//
+// Meisam: NVIDIA devices do not accept NULL as platform ID
 
     log_debug("Going to run the program...\n");
     cl_platform_id* platform_ids;
@@ -161,7 +300,7 @@ int main(int argc, char** argv) {
     log_debug2("CL_PLATFORM_EXTENSIONS size %d", (int ) param_size_ret);
     log_debug2("CL_PLATFORM_EXTENSIONS %s", (char * ) param_value);
 
-    //    err = CL_SUCCESS;
+//    err = CL_SUCCESS;
     log_debug2("Platforms queried successfully. %d found.", *num_platforms);
     if (err != CL_SUCCESS) {
         printf("Error: (Error code: %d) Failed to get platform IDs!\n", err);
@@ -175,7 +314,7 @@ int main(int argc, char** argv) {
     int *device_count;
     device_count = (int *) malloc(sizeof(int));
     *device_count = 10;
-    int gpu = CL_DEVICE_TYPE_GPU; // CL_DEVICE_TYPE_ALL; //CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU
+// CL_DEVICE_TYPE_ALL; //CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU
     err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_ALL, 1, &device_id,
             device_count);
     log_debug2("device_count = %d\n", *device_count);
@@ -188,36 +327,37 @@ int main(int argc, char** argv) {
     clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, param_size,
             param_value, &param_size_ret);
     log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS size %d", (int ) param_size_ret);
-    log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS %d", *((int *) param_value));
+    log_debug2("CL_DEVICE_MAX_COMPUTE_UNITS %d", *((int * ) param_value));
 
-    // Create a compute context
-    //
+// Create a compute context
+//
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!context) {
         printf("Error: Failed to create a compute context!");
         return EXIT_FAILURE;
     }
 
-    // Create a command commands
-    //
+// Create a command commands
+//
     commands = clCreateCommandQueue(context, device_id, 0, &err);
     if (!commands) {
         printf("Error: Failed to create a command commands!\n");
         return EXIT_FAILURE;
     }
 
-    // Create the compute program from the source buffer
-    //
+// Create the compute program from the source buffer
+//
     KernelSource = *program_buffer;
     program = clCreateProgramWithSource(context, 1,
-            (const char **) &KernelSource, NULL, &err);
+            (const char **) &KernelSource,
+            NULL, &err);
     if (!program) {
         printf("Error: Failed to create compute program!");
         return EXIT_FAILURE;
     }
 
-    // Build the program executable
-    //
+// Build the program executable
+//
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS) {
         size_t len;
@@ -230,9 +370,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    // Create the compute kernel in the program we wish to run
-    //
-    kernel = clCreateKernel(program, "hash_join", &err);
+// Create the compute kernel in the program we wish to run
+//
+    kernel = clCreateKernel(program, "sort", &err);
     if (!kernel || err != CL_SUCCESS) {
         printf("Error: Failed to create compute kernel!\n");
         exit(1);
@@ -240,8 +380,8 @@ int main(int argc, char** argv) {
 
     clock_t begin = clock();
 
-    // Create the input and output arrays in device memory for our calculation
-    //
+// Create the input and output arrays in device memory for our calculation
+//
     const unsigned int probe_size = DATA_SIZE;
     const unsigned int build_size = DATA_SIZE;
 
@@ -258,7 +398,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    // write the build table data only once
+// write the build table data only once
     err = clEnqueueWriteBuffer(commands, d_build_buffer, CL_TRUE, 0,
             sizeof(int) * count, build_data, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
@@ -281,11 +421,11 @@ int main(int argc, char** argv) {
         // Set the arguments to our compute kernel
         //
         err = 0;
-        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_probe_buffer);
-        err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &probe_size);
-        err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_build_buffer);
-        err |= clSetKernelArg(kernel, 3, sizeof(unsigned int), &build_size);
-        err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &d_join_result_buffer);
+//        err = clSetKernelArg(kernel, 0, sizeof(unsigned int), &d_probe_buffer);
+        err |= clSetKernelArg(kernel, 0, sizeof(unsigned int), &build_size);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_build_buffer);
+//        err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &probe_size);
+//        err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &d_join_result_buffer);
         if (err != CL_SUCCESS) {
             printf("Error: Failed to set kernel arguments! %d\n", err);
             return EXIT_FAILURE;
@@ -305,6 +445,8 @@ int main(int argc, char** argv) {
         // using the maximum number of work group items for this device
         //
         global = count;
+        log_debug2("Global work units %d.", global);
+        log_debug2("Local work units %d.", local);
         err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local,
                 0,
                 NULL, NULL);
@@ -332,8 +474,8 @@ int main(int argc, char** argv) {
 
     double elapsed_secs = (double) (end - begin) / CLOCKS_PER_SEC;
 
-    // Validate our results
-    //
+// Validate our results
+//
     correct = 0;
     for (i = 0; i < count; i++) {
         if (results[i] == build_data[i]) {
@@ -345,13 +487,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    // Print a brief summary detailing the results
-    //
+// Print a brief summary detailing the results
+//
     printf("Computed '%d/%d' correct values!\n", correct, count);
     printf("It took %3f seconds to do the computation", elapsed_secs);
 
-    // Shutdown and cleanup
-    //
+// Shutdown and cleanup
+//
     clReleaseMemObject(d_build_buffer);
     clReleaseMemObject(d_probe_buffer);
     clReleaseMemObject(d_join_result_buffer);

@@ -258,15 +258,16 @@ int main(int argc, char** argv) {
 // Meisam: NVIDIA devices do not accept NULL as platform ID
 
     log_debug("Going to run the program...\n");
+    cl_uint max_platforms = 100;
     cl_platform_id* platform_ids;
-    platform_ids = (cl_platform_id *) malloc(sizeof(cl_platform_id) * 100);
+    platform_ids = (cl_platform_id *) malloc(sizeof(cl_platform_id) * max_platforms);
     log_debug("... created arrays");
 
     unsigned int *num_platforms = (unsigned int *) malloc(
             sizeof(unsigned int *));
     *num_platforms = 0;
     log_debug("Going to query platforms...");
-    err = clGetPlatformIDs(100, platform_ids, num_platforms);
+    err = clGetPlatformIDs(max_platforms, platform_ids, num_platforms);
 
     log_debug2("Number of platforms = %d", *num_platforms);
 
@@ -313,8 +314,8 @@ int main(int argc, char** argv) {
     }
     int *device_count;
     device_count = (int *) malloc(sizeof(int));
-    *device_count = 10;
 // CL_DEVICE_TYPE_ALL; //CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU
+    *device_count = -1;
     err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_ALL, 1, &device_id,
             device_count);
     log_debug2("device_count = %d\n", *device_count);

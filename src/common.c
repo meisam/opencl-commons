@@ -17,6 +17,7 @@
 #include <CL/cl.h>
 #include <time.h>
 #include "common.h"
+
 #define MAX_FILE_SIZE (1<<30)
 
 ///
@@ -68,26 +69,14 @@ int prepare_device(int argc, char** argv) {
         log_debug("An error occurred in reading the file");
         return err;
     }
-    size_t global;                 // global domain size for our calculation
-    size_t local;                   // local domain size for our calculation
-
-    cl_device_id device_id;                   // compute device id
-    cl_context context;                       // compute context
-    cl_command_queue commands;                // compute command queue
-    cl_program program;                       // compute program
-    cl_kernel kernel;                         // compute kernel
-
-    cl_mem d_build_buffer;         // device memory used for the input array
-    cl_mem d_probe_buffer;        // device memory used for the output array
-    cl_mem d_join_result_buffer;  // device memory used for the output array
-
     // Connect to a compute device
     // NVIDIA devices do not accept NULL as platform ID
 
     log_debug("Going to connect to the device...\n");
     cl_uint max_platforms = 100;
     cl_platform_id* platform_ids;
-    platform_ids = (cl_platform_id *) malloc(sizeof(cl_platform_id) * max_platforms);
+    platform_ids = (cl_platform_id *) malloc(
+            sizeof(cl_platform_id) * max_platforms);
 
     unsigned int *num_platforms = (unsigned int *) malloc(
             sizeof(unsigned int *));
@@ -174,10 +163,8 @@ int prepare_device(int argc, char** argv) {
 
 // Create the compute program from the source buffer
 //
-    KernelSource = *program_buffer;
     program = clCreateProgramWithSource(context, 1,
-            (const char **) &KernelSource,
-            NULL, &err);
+            (const char **) program_buffer, NULL, &err);
     if (!program) {
         printf("Error: Failed to create compute program!");
         return EXIT_FAILURE;
@@ -204,9 +191,5 @@ int prepare_device(int argc, char** argv) {
         printf("Error: Failed to create compute kernel!\n");
         exit(1);
     }
-
-    clock_t begin = clock();
-
-
 
 }

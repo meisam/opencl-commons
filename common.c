@@ -41,7 +41,7 @@ int read_file(char *file_path, char **file_buffer, size_t *file_size) {
     }
     log_debug("going to allocate buffer...");
     *file_buffer = (char *) malloc(*file_size + 1);
-    log_debug("Buffer allocated susccessfully");
+    log_debug("Buffer allocated successfully");
     file_buffer[0][*file_size] = '\0';
     log_debug2("Program size is %zd.", *file_size);
     log_debug("Initializing read bufferers successful")

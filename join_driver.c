@@ -18,6 +18,7 @@
 #include <CL/cl.h>
 #include <time.h>
 #include "common.h"
+#include "common.c"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -33,34 +34,6 @@
 const char *KernelSource = "";
 
 ////////////////////////////////////////////////////////////////////////////////
-
-int read_kernel_file(char *file_path, char **program_buffer, int *program_size) {
-    FILE * program_handle;
-    program_handle = fopen(file_path, "r");
-    if (program_handle == NULL) {
-        printf("ERROR: File %s cannot be opened!\n", file_path);
-        return errno;
-    }
-    log_debug2("file %s opened successfully", file_path);
-    fseek(program_handle, 0, SEEK_END);
-    log_debug("seek successful")
-    *program_size = ftell(program_handle);
-    rewind(program_handle);
-    log_debug("rewind successful")
-    program_buffer[0] = (char *) malloc(*program_size + 1);
-    program_buffer[0][*program_size] = '\0';
-    log_debug2("Program size is %d.", *program_size);
-    log_debug("Initializing read bufferers successful")
-    fread(*program_buffer, sizeof(char), *program_size, program_handle);
-    log_debug2("Reading streams successful\n%s", *program_buffer);
-    int res = fclose(program_handle);
-    if (res == EOF) {
-        log_debug("closing streams failed.");
-    } else {
-        log_debug("Closing streams succeeded");
-    }
-    return 0;
-}
 
 enum db_type {
     DECIMAL, STRING, FLOAT, DATETIME

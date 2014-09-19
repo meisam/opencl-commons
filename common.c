@@ -33,7 +33,7 @@ int read_file(char *file_path, char **file_buffer, size_t *file_size) {
     fseek(program_handle, 0, SEEK_END);
     log_debug("seek successful")
     *file_size = ftell(program_handle);
-    log_debug2("File size is %d", *file_size);
+    log_debug2("File size is %zd", *file_size);
     rewind(program_handle);
     log_debug("rewind successful");
     if (*file_size > MAX_FILE_SIZE) {
@@ -43,7 +43,7 @@ int read_file(char *file_path, char **file_buffer, size_t *file_size) {
     *file_buffer = (char *) malloc(*file_size + 1);
     log_debug("Buffer allocated susccessfully");
     file_buffer[0][*file_size] = '\0';
-    log_debug2("Program size is %d.", *file_size);
+    log_debug2("Program size is %zd.", *file_size);
     log_debug("Initializing read bufferers successful")
     fread(*file_buffer, sizeof(char), *file_size, program_handle);
     log_debug2("Reading streams successful\n%s", *file_buffer);

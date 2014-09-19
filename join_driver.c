@@ -208,12 +208,12 @@ int main(int argc, char **argv) {
     part_data = read_table(*part_table, "../ssdb");
 
     // let't hash the third column
-    size_t data_size = part_data->column_sizes[3];
+    size_t data_size = part_data->column_sizes[3] * sizeof(int) / sizeof(char);
     size_t hash_table_size = data_size * HASH_TABLE_EXTRA_FACTOR;
 
     int *hash_table = (int *) malloc(sizeof(int) * hash_table_size);
-    build_hash_table(part_data->column_sizes[3], part_data->column_data[3],
-            hash_table_size, hash_table);
+    build_hash_table(part_data->column_sizes[3],
+            (int *) part_data->column_data[3], hash_table_size, hash_table);
 
     log_debug("Start of execution.");
     int err;                           // error code returned from API calls

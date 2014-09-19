@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
     program_buffer = (char **) malloc(sizeof(char *));
     err = read_file(argv[1], program_buffer, program_size);
     if (err) {
-        log_debug("An error ocurred in reading the file");
+        log_debug("An error occurred in reading the file");
         return err;
     }
     int *build_data;              // The smaller table in the join

@@ -36,7 +36,7 @@ const char *KernelSource = "";
 ////////////////////////////////////////////////////////////////////////////////
 
 enum db_type {
-    DECIMAL, STRING, FLOAT, DATETIME
+    INTEGER, STRING, FLOAT, DATETIME
 };
 
 struct column_t {
@@ -58,7 +58,7 @@ struct table_schema_t* get_part_table_shcema() {
     col0 = (struct column_t *) malloc(sizeof(struct column_t));
     col0->column_name = "P_PARTKEY";
     col0->column_index = 0;
-    col0->column_type = DECIMAL;
+    col0->column_type = INTEGER;
     col0->lenght = 4;
 
     struct column_t *col1;
@@ -79,7 +79,7 @@ struct table_schema_t* get_part_table_shcema() {
     col3 = (struct column_t *) malloc(sizeof(struct column_t));
     col3->column_name = "P_CATEGORY";
     col3->column_index = 3;
-    col3->column_type = DECIMAL;
+    col3->column_type = INTEGER;
     col3->lenght = 7;
 
     struct column_t *all_columns;
@@ -106,28 +106,28 @@ struct table_schema_t* get_lineorder_table_shcema() {
     col0 = (struct column_t *) malloc(sizeof(struct column_t));
     col0->column_name = "LO_ORDERKEY";
     col0->column_index = 0;
-    col0->column_type = DECIMAL;
+    col0->column_type = INTEGER;
     col0->lenght = 4;
 
     struct column_t *col1;
     col1 = (struct column_t *) malloc(sizeof(struct column_t));
     col1->column_name = "LO_LINENUMBER";
     col1->column_index = 1;
-    col1->column_type = DECIMAL;
+    col1->column_type = INTEGER;
     col1->lenght = 4;
 
     struct column_t *col2;
     col2 = (struct column_t *) malloc(sizeof(struct column_t));
     col2->column_name = "LO_CUSTKEYE";
     col2->column_index = 2;
-    col2->column_type = DECIMAL;
+    col2->column_type = INTEGER;
     col2->lenght = 4;
 
     struct column_t *col3;
     col3 = (struct column_t *) malloc(sizeof(struct column_t));
     col3->column_name = "LO_PARTKEY";
     col3->column_index = 3;
-    col3->column_type = DECIMAL;
+    col3->column_type = INTEGER;
     col3->lenght = 4;
 
     struct column_t *all_columns;

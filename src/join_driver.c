@@ -29,12 +29,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Simple compute kernel which computes the hash_join of an input array
-//
-const char *KernelSource = "";
-
-////////////////////////////////////////////////////////////////////////////////
-
 enum db_type {
     INTEGER, STRING, FLOAT, DATETIME
 };
@@ -227,98 +221,105 @@ int main(int argc, char **argv) {
 
 // Validate our results
 //// Create the input and output arrays in device memory for our calculation
+    cl_mem d_build_buffer;         // device memory used for the input array
+    cl_mem d_probe_buffer;        // device memory used for the output array
+    cl_mem d_join_result_buffer;  // device memory used for the output array
+
     //
-        const unsigned int probe_size = DATA_SIZE;
-        const unsigned int build_size = DATA_SIZE;
+    const unsigned int probe_size = DATA_SIZE;
+    const unsigned int build_size = DATA_SIZE;
+    int count = DATA_SIZE;
 
-        d_build_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                sizeof(int) * DATA_SIZE, NULL, NULL);
-        d_probe_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                sizeof(int) * DATA_SIZE, NULL, NULL);
+    d_build_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY,
+            sizeof(int) * DATA_SIZE, NULL, NULL);
+    d_probe_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY,
+            sizeof(int) * DATA_SIZE, NULL, NULL);
 
-        d_join_result_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                sizeof(char) * DATA_SIZE, NULL, NULL);
-        /**/
-        if (!d_build_buffer || !d_probe_buffer || !d_join_result_buffer) {
-            printf("Error: (%d) Failed to allocate device memory!\n", err);
-            exit(1);
-        }
+    d_join_result_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+            sizeof(char) * DATA_SIZE, NULL, NULL);
+    /**/
+    if (!d_build_buffer || !d_probe_buffer || !d_join_result_buffer) {
+        printf("Error: Failed to allocate device memory!\n");
+        exit(1);
+    }
 
     // write the build table data only once
-        err = clEnqueueWriteBuffer(commands, d_build_buffer, CL_TRUE, 0,
-                sizeof(int) * count, build_data, 0, NULL, NULL);
+    cl_int err = clEnqueueWriteBuffer(commands, d_build_buffer, CL_TRUE, 0,
+            sizeof(int) * count, build_data, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to write to source array!\n");
+        return EXIT_FAILURE;
+    }
+    clock_t begin = clock();
+
+    int i;
+    for (i = 0; i < SCALE; i++) {
+        log_debug2("Processing chunk %d================================", i);
+        // Write our data set into the input array in device memory
+        //
+        err = clEnqueueWriteBuffer(commands, d_probe_buffer, CL_TRUE, 0,
+                sizeof(int) * count, &probe_data[i * probe_size], 0, NULL,
+                NULL);
         if (err != CL_SUCCESS) {
             printf("Error: Failed to write to source array!\n");
             return EXIT_FAILURE;
         }
 
-        for (i = 0; i < SCALE; i++) {
-            log_debug2("Processing chunck %d================================", i);
-            // Write our data set into the input array in device memory
-            //
-            err = clEnqueueWriteBuffer(commands, d_probe_buffer, CL_TRUE, 0,
-                    sizeof(int) * count, &probe_data[i * probe_size], 0, NULL,
-                    NULL);
-            if (err != CL_SUCCESS) {
-                printf("Error: Failed to write to source array!\n");
-                return EXIT_FAILURE;
-            }
-
-            // Set the arguments to our compute kernel
-            //
-            err = 0;
-    //        err = clSetKernelArg(kernel, 0, sizeof(unsigned int), &d_probe_buffer);
-            err |= clSetKernelArg(kernel, 0, sizeof(unsigned int), &build_size);
-            err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_build_buffer);
-    //        err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &probe_size);
-    //        err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &d_join_result_buffer);
-            if (err != CL_SUCCESS) {
-                printf("Error: Failed to set kernel arguments! %d\n", err);
-                return EXIT_FAILURE;
-            }
-
-            // Get the maximum work group size for executing the kernel on the device
-            //
-            err = clGetKernelWorkGroupInfo(kernel, device_id,
-            CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
-            if (err != CL_SUCCESS) {
-                printf("Error: Failed to retrieve kernel work group info! %d\n",
-                        err);
-                return EXIT_FAILURE;
-            }
-
-            // Execute the kernel over the entire range of our 1d input data set
-            // using the maximum number of work group items for this device
-            //
-            global = count;
-            log_debug2("Global work units %zd.", global);
-            log_debug2("Local work units %zd.", local);
-            err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local,
-                    0,
-                    NULL, NULL);
-            if (err) {
-                printf("Error: Failed to execute kernel!\n");
-                return EXIT_FAILURE;
-            }
-
-            // Wait for the command commands to get serviced before reading back results
-            //
-            clFinish(commands);
-
-            // Read back the results from the device to verify the output
-            //
-            err = clEnqueueReadBuffer(commands, d_join_result_buffer, CL_TRUE, 0,
-                    sizeof(char) * count, &results[i * DATA_SIZE], 0, NULL,
-                    NULL);
-            if (err != CL_SUCCESS) {
-                printf("Error: Failed to read output array! %d\n", err);
-                exit(1);
-            }
+        // Set the arguments to our compute kernel
+        //
+        err = 0;
+        //        err = clSetKernelArg(kernel, 0, sizeof(unsigned int), &d_probe_buffer);
+        err |= clSetKernelArg(kernel, 0, sizeof(unsigned int), &build_size);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_build_buffer);
+        //        err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &probe_size);
+        //        err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &d_join_result_buffer);
+        if (err != CL_SUCCESS) {
+            printf("Error: Failed to set kernel arguments! %d\n", err);
+            return EXIT_FAILURE;
         }
 
-        clock_t end = clock();
+        // Get the maximum work group size for executing the kernel on the device
+        //
+        err = clGetKernelWorkGroupInfo(kernel, device_id,
+        CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
+        if (err != CL_SUCCESS) {
+            printf("Error: Failed to retrieve kernel work group info! %d\n",
+                    err);
+            return EXIT_FAILURE;
+        }
 
-        double elapsed_secs = (double) (end - begin) / CLOCKS_PER_SEC;
+        // Execute the kernel over the entire range of our 1d input data set
+        // using the maximum number of work group items for this device
+        //
+        global = count;
+        log_debug2("Global work units %zd.", global);
+        log_debug2("Local work units %zd.", local);
+        err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local,
+                0,
+                NULL, NULL);
+        if (err) {
+            printf("Error: Failed to execute kernel!\n");
+            return EXIT_FAILURE;
+        }
+
+        // Wait for the command commands to get serviced before reading back results
+        //
+        clFinish(commands);
+
+        // Read back the results from the device to verify the output
+        //
+        err = clEnqueueReadBuffer(commands, d_join_result_buffer, CL_TRUE, 0,
+                sizeof(char) * count, &results[i * DATA_SIZE], 0, NULL,
+                NULL);
+        if (err != CL_SUCCESS) {
+            printf("Error: Failed to read output array! %d\n", err);
+            exit(1);
+        }
+    }
+
+    clock_t end = clock();
+
+    double elapsed_secs = (double) (end - begin) / CLOCKS_PER_SEC;
     correct = 0;
     for (i = 0; i < count; i++) {
         if (results[i] == build_data[i]) {

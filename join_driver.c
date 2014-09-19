@@ -26,6 +26,7 @@
 //
 #define DATA_SIZE (1<<10) // As much data as you can allocate
 #define SCALE (1<<4)
+#define HASH_TABLE_EXTRA_FACTOR (2)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -148,42 +149,80 @@ struct table_schema_t* get_lineorder_table_shcema() {
     return lineorder_table;
 }
 
-int read_column(struct table_schema_t schema, int column_index, char *path) {
-    FILE * column_file;
+int read_column(struct table_schema_t schema, int column_index, char *path,
+        char *column_data, size_t *column_size) {
     char *full_path;
+    size_t header_size = 3 * sizeof(long) + 3 * sizeof(int)
+            + 4060 * sizeof(char);
     int path_lenght = strlen(path) + strlen("/") + strlen(schema.name) + 1;
-    full_path = (char *) malloc(sizeof(char) * path_lenght);
+    full_path = (char *) malloc(sizeof(char) * path_lenght + 1);
     strcpy(full_path, path);
     strcat(full_path, "/");
     strcat(full_path, schema.name);
     full_path[path_lenght - 1] = (char) ('0' + column_index);
-    printf("FullPath is %s\n", full_path);
-    column_file = fopen(full_path, "r");
+    full_path[path_lenght] = '\0';
+    log_debug2("FullPath is %s\n", full_path);
+    read_file(full_path, &column_data, column_size);
+    log_debug2("size of the file %zd\n", *column_size);
+    *column_size = *column_size - header_size;
+    column_data = &column_data[header_size];
     return -1;
 }
 
-int read_table(struct table_schema_t schema, char *path) {
+struct table_data_t {
+    char **column_data;
+    size_t *column_sizes;
+};
+
+struct table_data_t* read_table(struct table_schema_t schema, char *path) {
     int column_index = 0;
+
+    char **column_data = (char **) malloc(sizeof(char *) * schema.column_count);
+    size_t *column_sizes = (size_t *) malloc(
+            sizeof(size_t) * schema.column_count);
     for (column_index = 0; column_index < schema.column_count; column_index++) {
-        read_column(schema, column_index, path);
+        read_column(schema, column_index, path, column_data[column_index],
+                &column_sizes[column_index]);
+        log_debug2("column_size %10zd\n", column_sizes[column_index]);
     }
-    return -1;
+    struct table_data_t* table_data = (struct table_data_t *) malloc(
+            sizeof(struct table_data_t));
+    table_data->column_data = column_data;
+    table_data->column_sizes = column_sizes;
+    return table_data;
 }
 
-int main(int argc, char** argv) {
+void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
+        int *hash_table) {
+
+}
+
+int main(int argc, char **argv) {
 
     struct table_schema_t *lineorder_table = get_lineorder_table_shcema();
-    read_table(*lineorder_table,
-            "../ssdb");
+    struct table_data_t *lineorder_data;
+    lineorder_data = read_table(*lineorder_table, "../ssdb");
 
-    log_debug("Start of execution.")
-    int err;                            // error code returned from API calls
+    struct table_schema_t *part_table = get_part_table_shcema();
+    struct table_data_t* part_data;
+    part_data = read_table(*part_table, "../ssdb");
+
+    // let't hash the third column
+    size_t data_size = part_data->column_sizes[3];
+    size_t hash_table_size = data_size * HASH_TABLE_EXTRA_FACTOR;
+
+    int *hash_table = (int *) malloc(sizeof(int) * hash_table_size);
+    build_hash_table(part_data->column_sizes[3], part_data->column_data[3],
+            hash_table_size, hash_table);
+
+    log_debug("Start of execution.");
+    int err;                           // error code returned from API calls
     char **program_buffer;
-    int *program_size;
+    size_t *program_size;
 
-    program_size = (int*) malloc(sizeof(int));
-    program_buffer = (char **) malloc(sizeof(char*));
-    err = read_kernel_file(argv[1], program_buffer, program_size);
+    program_size = (size_t *) malloc(sizeof(size_t));
+    program_buffer = (char **) malloc(sizeof(char *));
+    err = read_file(argv[1], program_buffer, program_size);
     if (err) {
         log_debug("An error ocurred in reading the file");
         return err;
@@ -194,10 +233,10 @@ int main(int argc, char** argv) {
     probe_data = (int *) malloc(sizeof(int) * DATA_SIZE * SCALE);
     char* results;         // The join results
     results = (char *) malloc(sizeof(char) * DATA_SIZE * SCALE);
-    unsigned int correct;                  // number of correct results returned
+    unsigned int correct;              // number of correct results returned
 
-    size_t global;                     // global domain size for our calculation
-    size_t local;                       // local domain size for our calculation
+    size_t global;                 // global domain size for our calculation
+    size_t local;                   // local domain size for our calculation
 
     cl_device_id device_id;                   // compute device id
     cl_context context;                       // compute context
@@ -205,9 +244,9 @@ int main(int argc, char** argv) {
     cl_program program;                       // compute program
     cl_kernel kernel;                         // compute kernel
 
-    cl_mem d_build_buffer;             // device memory used for the input array
-    cl_mem d_probe_buffer;            // device memory used for the output array
-    cl_mem d_join_result_buffer;      // device memory used for the output array
+    cl_mem d_build_buffer;         // device memory used for the input array
+    cl_mem d_probe_buffer;        // device memory used for the output array
+    cl_mem d_join_result_buffer;  // device memory used for the output array
 
 // Fill our data set with random int values
 //
@@ -233,7 +272,8 @@ int main(int argc, char** argv) {
     log_debug("Going to run the program...\n");
     cl_uint max_platforms = 100;
     cl_platform_id* platform_ids;
-    platform_ids = (cl_platform_id *) malloc(sizeof(cl_platform_id) * max_platforms);
+    platform_ids = (cl_platform_id *) malloc(
+            sizeof(cl_platform_id) * max_platforms);
     log_debug("... created arrays");
 
     unsigned int *num_platforms = (unsigned int *) malloc(
@@ -285,8 +325,8 @@ int main(int argc, char** argv) {
         log_debug("No platform was found.");
         return EXIT_FAILURE;
     }
-    int *device_count;
-    device_count = (int *) malloc(sizeof(int));
+    unsigned int *device_count;
+    device_count = (unsigned int *) malloc(sizeof(unsigned int));
 // CL_DEVICE_TYPE_ALL; //CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU
     *device_count = -1;
     err = clGetDeviceIDs(platform_ids[0], CL_DEVICE_TYPE_ALL, 1, &device_id,
@@ -419,8 +459,8 @@ int main(int argc, char** argv) {
         // using the maximum number of work group items for this device
         //
         global = count;
-        log_debug2("Global work units %d.", global);
-        log_debug2("Local work units %d.", local);
+        log_debug2("Global work units %zd.", global);
+        log_debug2("Local work units %zd.", local);
         err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local,
                 0,
                 NULL, NULL);

@@ -1,0 +1,15 @@
+/config/
+/m4/
+/autom4te.cache/
+/Debug/
+/aclocal.m4
+/config.log
+/config.status
+/configure
+*Makefile
+*Makefile.in
+/Release/
+*.o
+*/.deps/
+/.cproject
+/.project

@@ -193,7 +193,7 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
 int main(int argc, char **argv) {
 
     log_debug("Start of execution.");
-    prepare_devic(argc, argv);
+    prepare_device(argc, argv);
 
     struct table_schema_t *lineorder_table = get_lineorder_table_shcema();
     struct table_data_t *lineorder_data;

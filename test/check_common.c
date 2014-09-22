@@ -64,6 +64,12 @@ Suite *common_suite(void) {
 
     return s;
 }
+#define MAX_HASH_VALUE (1<<12)
+
+/// A crude and naive hash implementation
+int naive_hash(const int val) {
+    return (val * 8191) % MAX_HASH_VALUE; // other values to use: 127, 4047, 8191
+}
 
 START_TEST (gpu_sanity_check)
     {
@@ -72,11 +78,29 @@ START_TEST (gpu_sanity_check)
 
 START_TEST (gpu_hash_check)
     {
+        ck_assert_int_eq(prepare_device("../src/join_kernel.cl", "hash"), 0);
+
         int data[4] = { 1, 2, 3, 4 };
-        int hashed_data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+        log_debug("created data");
+        int * hashed_data;
+        hashed_data = (int *) malloc(sizeof(int) * 4);
+        log_debug("created pointer to hash table");
+        log_debug("allocated hash table");
+        hashed_data[0] = 100;
+        hashed_data[1] = 120;
+        hashed_data[2] = 120;
+        hashed_data[3] = 130;
+        log_debug("initialized hash table");
         int size = -1;
-        build_hash_table(4, data, 8, hashed_data);
-        ck_assert_int_eq(hashed_data[0], 2);
+        build_hash_table(4, data, 4, hashed_data);
+        log_debug("called build_hash_table");
+
+        ck_assert_int_eq(hashed_data[0], naive_hash(data[0]));
+        ck_assert_int_eq(hashed_data[1], naive_hash(data[1]));
+        ck_assert_int_eq(hashed_data[2], naive_hash(data[2]));
+        ck_assert_int_eq(hashed_data[3], naive_hash(data[3]));
+        log_debug("checked all assertions");
+
     }END_TEST
 
 Suite *gpu_suite(void) {

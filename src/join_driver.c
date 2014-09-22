@@ -241,6 +241,59 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
 
 }
 
+cl_int gpu_count_hashed_values(cl_mem d_data_buffer, cl_mem d_hashed_data_buffer,
+        size_t data_size) {
+    cl_int err = 0;
+    err |= clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_data_buffer);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_hashed_data_buffer);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to set arguments kernel! %d\n", err);
+        return err;
+    }
+
+    err = clGetKernelWorkGroupInfo(kernel, device_id,
+    CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to retrieve kernel work group info! %d\n", err);
+        return err;
+    }
+    global = data_size;
+    if (local > global) {
+        local = global;
+    }
+    log_debug2("Global work units %zd.", global);
+    log_debug2("Local work units %zd.", local);
+    err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0,
+    NULL, NULL);
+    if (err != CL_SUCCESS) {
+        printf(
+                "Error: (error code %d) Build hash table failed to execute kernel!\n",
+                err);
+    }
+    return CL_SUCCESS;
+}
+void count_hash_values(size_t hash_values_size, int* hash_values, size_t counts_size, int *counts) {
+    cl_mem d_hashed_values;         // device memory used for the input data
+    cl_mem d_counts; // device memory used for the hashed output data
+
+    d_hashed_values = clCreateBuffer(context, CL_MEM_READ_ONLY,
+            sizeof(int) * hash_values_size, NULL, NULL);
+    d_counts = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+            sizeof(int) * hash_values_size, NULL, NULL);
+
+    cl_int err = 0;
+    err = clEnqueueWriteBuffer(commands, d_hashed_values, CL_TRUE, 0,
+            sizeof(int) * hash_values_size, hash_values, 0, NULL, NULL);
+
+    err = gpu_count_hashed_values(d_hashed_values, d_counts, hash_values_size);
+    err = clEnqueueReadBuffer(commands, d_counts, CL_TRUE, 0,
+            sizeof(int) * counts_size, counts, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to read output array! %d\n", err);
+        return;
+    }
+}
+
 int __main(int argc, char **argv) {
 
     log_debug("Start of execution.");

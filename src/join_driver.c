@@ -190,7 +190,7 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
 
 }
 
-int main(int argc, char **argv) {
+int __main(int argc, char **argv) {
 
     log_debug("Start of execution.");
     prepare_device(argv[1], "sort");

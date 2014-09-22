@@ -187,6 +187,58 @@ struct table_data_t* read_table(struct table_schema_t schema, char *path) {
 
 void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
         int *hash_table) {
+    cl_mem d_data_buffer;         // device memory used for the input data
+    cl_mem d_hashed_data_buffer; // device memory used for the hashed output data
+
+    int i = 0;
+    for (i = 0; i < hash_table_size; i++) {
+        printf("The value in hash table before hashing is %d\n", hash_table[i]);
+
+    }
+    d_data_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY,
+            sizeof(int) * data_size, NULL, NULL);
+    d_hashed_data_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+            sizeof(int) * hash_table_size, NULL, NULL);
+
+    cl_int err = 0;
+    err |= clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_data_buffer);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_hashed_data_buffer);
+
+    err = clEnqueueWriteBuffer(commands, d_data_buffer, CL_TRUE, 0,
+            sizeof(int) * data_size, data, 0, NULL, NULL);
+
+    err = clGetKernelWorkGroupInfo(kernel, device_id,
+    CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to retrieve kernel work group info! %d\n", err);
+        return;
+    }
+    global = data_size;
+    if (local > global) {
+        local = global;
+    }
+    log_debug2("Global work units %zd.", global);
+    log_debug2("Local work units %zd.", local);
+    err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0,
+    NULL, NULL);
+    if (err) {
+        printf(
+                "Error: (error code %d) Build hash table failed to execute kernel!\n",
+                err);
+        return;
+    }
+
+    err = clEnqueueReadBuffer(commands, d_hashed_data_buffer, CL_TRUE, 0,
+            sizeof(int) * hash_table_size, hash_table, 0, NULL, NULL);
+
+    for (i = 0; i < hash_table_size; i++) {
+        printf("The value in hash table after hashing is %d\n", hash_table[i]);
+    }
+
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to read output array! %d\n", err);
+        return;
+    }
 
 }
 

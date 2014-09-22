@@ -12,19 +12,12 @@
 
 #define DEBUG 0
 
-#define log_debug(msg)                       \
-if (DEBUG) {                                 \
-    printf("[DEBUG]: ");                     \
-    printf((msg));                           \
-    printf("\n");                            \
-}                                            \
-
-#define log_debug2(msg, code)                \
-if (DEBUG) {                                 \
-    printf("[DEBUG]: ");                     \
-    printf((msg), (code));                   \
-    printf("\n");                            \
-}                                            \
+#define log_debug(...)                                     \
+if (DEBUG) {                                               \
+    printf("[DEBUG]: %s:%d: ", __FILE__, __LINE__);        \
+    printf(__VA_ARGS__);                                   \
+    printf("\n");                                          \
+}                                                          \
 
 cl_device_id device_id;                   // compute device id
 cl_context context;                       // compute context

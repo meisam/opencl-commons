@@ -154,9 +154,9 @@ int read_column(struct table_schema_t schema, int column_index, char *path,
     strcat(full_path, schema.name);
     full_path[path_lenght - 1] = (char) ('0' + column_index);
     full_path[path_lenght] = '\0';
-    log_debug2("FullPath is %s\n", full_path);
+    log_debug("FullPath is %s\n", full_path);
     read_file(full_path, &column_data, column_size);
-    log_debug2("size of the file %zd\n", *column_size);
+    log_debug("size of the file %zd\n", *column_size);
     *column_size = *column_size - header_size;
     column_data = &column_data[header_size];
     return -1;
@@ -176,7 +176,7 @@ struct table_data_t* read_table(struct table_schema_t schema, char *path) {
     for (column_index = 0; column_index < schema.column_count; column_index++) {
         read_column(schema, column_index, path, column_data[column_index],
                 &column_sizes[column_index]);
-        log_debug2("column_size %10zd\n", column_sizes[column_index]);
+        log_debug("column_size %10zd\n", column_sizes[column_index]);
     }
     struct table_data_t* table_data = (struct table_data_t *) malloc(
             sizeof(struct table_data_t));
@@ -205,8 +205,8 @@ cl_int gpu_hash_join(cl_mem d_data_buffer, cl_mem d_hashed_data_buffer,
     if (local > global) {
         local = global;
     }
-    log_debug2("Global work units %zd.", global);
-    log_debug2("Local work units %zd.", local);
+    log_debug("Global work units %zd.", global);
+    log_debug("Local work units %zd.", local);
     err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0,
     NULL, NULL);
     if (err != CL_SUCCESS) {
@@ -261,8 +261,8 @@ cl_int gpu_count_hashed_values(cl_mem d_data_buffer, cl_mem d_hashed_data_buffer
     if (local > global) {
         local = global;
     }
-    log_debug2("Global work units %zd.", global);
-    log_debug2("Local work units %zd.", local);
+    log_debug("Global work units %zd.", global);
+    log_debug("Local work units %zd.", local);
     err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0,
     NULL, NULL);
     if (err != CL_SUCCESS) {
@@ -358,7 +358,7 @@ int __main(int argc, char **argv) {
 
     int i;
     for (i = 0; i < SCALE; i++) {
-        log_debug2("Processing chunk %d================================", i);
+        log_debug("Processing chunk %d================================", i);
         // Write our data set into the input array in device memory
         //
         err = clEnqueueWriteBuffer(commands, d_probe_buffer, CL_TRUE, 0,
@@ -397,8 +397,8 @@ int __main(int argc, char **argv) {
         // using the maximum number of work group items for this device
         //
         global = count;
-        log_debug2("Global work units %zd.", global);
-        log_debug2("Local work units %zd.", local);
+        log_debug("Global work units %zd.", global);
+        log_debug("Local work units %zd.", local);
         err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local,
                 0,
                 NULL, NULL);

@@ -185,6 +185,38 @@ struct table_data_t* read_table(struct table_schema_t schema, char *path) {
     return table_data;
 }
 
+cl_int gpu_hash_join(cl_mem d_data_buffer, cl_mem d_hashed_data_buffer,
+        size_t data_size) {
+    cl_int err = 0;
+    err |= clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_data_buffer);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_hashed_data_buffer);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to set arguments kernel! %d\n", err);
+        return err;
+    }
+
+    err = clGetKernelWorkGroupInfo(kernel, device_id,
+    CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
+    if (err != CL_SUCCESS) {
+        printf("Error: Failed to retrieve kernel work group info! %d\n", err);
+        return err;
+    }
+    global = data_size;
+    if (local > global) {
+        local = global;
+    }
+    log_debug2("Global work units %zd.", global);
+    log_debug2("Local work units %zd.", local);
+    err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0,
+    NULL, NULL);
+    if (err != CL_SUCCESS) {
+        printf(
+                "Error: (error code %d) Build hash table failed to execute kernel!\n",
+                err);
+    }
+    return CL_SUCCESS;
+}
+
 void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
         int *hash_table) {
     cl_mem d_data_buffer;         // device memory used for the input data
@@ -196,33 +228,10 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
             sizeof(int) * hash_table_size, NULL, NULL);
 
     cl_int err = 0;
-    err |= clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_data_buffer);
-    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_hashed_data_buffer);
-
     err = clEnqueueWriteBuffer(commands, d_data_buffer, CL_TRUE, 0,
             sizeof(int) * data_size, data, 0, NULL, NULL);
 
-    err = clGetKernelWorkGroupInfo(kernel, device_id,
-    CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
-    if (err != CL_SUCCESS) {
-        printf("Error: Failed to retrieve kernel work group info! %d\n", err);
-        return;
-    }
-    global = data_size;
-    if (local > global) {
-        local = global;
-    }
-    log_debug2("Global work units %zd.", global);
-    log_debug2("Local work units %zd.", local);
-    err = clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0,
-    NULL, NULL);
-    if (err) {
-        printf(
-                "Error: (error code %d) Build hash table failed to execute kernel!\n",
-                err);
-        return;
-    }
-
+    err = gpu_hash_join(d_data_buffer, d_hashed_data_buffer, data_size);
     err = clEnqueueReadBuffer(commands, d_hashed_data_buffer, CL_TRUE, 0,
             sizeof(int) * hash_table_size, hash_table, 0, NULL, NULL);
     if (err != CL_SUCCESS) {

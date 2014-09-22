@@ -1,0 +1,8 @@
+Quick build:
+
+	$ ./ autogen.sh
+	$ ./configure
+	$ make
+
+Quick test:
+	$ make check

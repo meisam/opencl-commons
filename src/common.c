@@ -177,7 +177,7 @@ int prepare_device(char* kerenel_path, char * kernel_name) {
         size_t len;
         char buffer[2048];
 
-        printf("Error: Failed to build program executable!\n");
+        printf("Error: (code %d) Failed to build program executable!\n", err);
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG,
                 sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);

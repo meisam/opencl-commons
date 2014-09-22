@@ -191,5 +191,5 @@ int prepare_device(char* kerenel_path, char * kernel_name) {
         printf("Error: Failed to create compute kernel!\n");
         exit(1);
     }
-
+    return 0;
 }

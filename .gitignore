@@ -10,6 +10,12 @@
 *Makefile.in
 /Release/
 *.o
+*.lo
 */.deps/
+*/.libs/
 /.cproject
 /.project
+/.deps/
+/.externalToolBuilders/
+/.settings/
+/build-aux/

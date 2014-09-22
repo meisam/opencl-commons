@@ -149,7 +149,7 @@ int prepare_device(char* kerenel_path, char * kernel_name) {
 //
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!context) {
-        printf("Error: Failed to create a compute context!");
+        printf("Error: (code %d) Failed to create a compute context!", err);
         return EXIT_FAILURE;
     }
 

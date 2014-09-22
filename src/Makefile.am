@@ -3,6 +3,6 @@
 lib_LTLIBRARIES = libgpujoin.la
 libgpujoin_la_SOURCES = common.c common.h
 
-bin_PROGRAMS = main
-main_SOURCES = sort_driver.c
-main_LDADD = libgpujoin.la -lOpenCL
+## bin_PROGRAMS = main
+## main_SOURCES = join_driver.c
+## main_LDADD = libgpujoin.la -lOpenCL

@@ -1,7 +1,7 @@
 #define MAX_HASH_VALUE (1<<12) 
 
 /// A crude and naive hash implementation
-__kernel void naive_hash(const int val, int * hahs_vlaue) {
+__kernel void naive_hash(const int val, __local int * hahs_vlaue) {
     *hahs_vlaue = (val * 8191) % MAX_HASH_VALUE; // other values to use: 127, 4047, 8191
 }
 __kernel void hash_join( __global int* probe_column, const unsigned int probe_count, __global int* build_column, const unsigned int build_count, __global char* join_result)
@@ -14,7 +14,8 @@ __kernel void hash_join( __global int* probe_column, const unsigned int probe_co
 /// This is the first step of hashing
 __kernel void hash(__global int* data, __global int* hashed_data) {
     int thread_idx = get_global_id(0);
-    int hash_value = 0;
+    __local int hash_value;
+    hash_value = 0;
     naive_hash(data[thread_idx], &hash_value);
     hashed_data[thread_idx] = hash_value;
 }

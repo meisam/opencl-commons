@@ -35,7 +35,7 @@ __kernel void prefix_sum(__global int* counts, __global int* prefix_sum) {
     int stride = 0;
     for (stride = 1; stride < n; stride <<=  1){
         if (thread_idx >= stride) {
-            prefix_sum[thread_idx]  += prefix_sum[thread_idx - (stride>>1)];
+            prefix_sum[thread_idx]  += prefix_sum[thread_idx - stride];
         }
         barrier(CLK_GLOBAL_MEM_FENCE);
     }  

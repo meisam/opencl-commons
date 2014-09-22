@@ -7,6 +7,8 @@
 
 #include <stdlib.h>
 #include <check.h>
+#include "../src/common.h"
+#include "../src/join_driver.c"
 
 void setup(void) {
     // don't do anything
@@ -16,10 +18,37 @@ void teardown(void) {
     // don't do anything
 }
 
-START_TEST (sanity_chech) {
+START_TEST (sanity_check)
+    {
         fail_if(1 != 1);
-}
-END_TEST
+    }END_TEST
+
+START_TEST (read_empty_file_check)
+    {
+        size_t size = -1;
+        char ** content = (char **) malloc(sizeof(char *));
+        read_file("test-data/empty-file", content, &size);
+        ck_assert_int_eq(size, 0);
+        ck_assert_str_eq(*content, "");
+    }END_TEST
+
+START_TEST (read_small_file_check)
+    {
+        size_t size = -1;
+        char ** content = (char **) malloc(sizeof(char *));
+        read_file("test-data/small-file", content, &size);
+        ck_assert_int_eq(size, 1);
+        ck_assert_str_eq(*content, "a");
+    }END_TEST
+
+START_TEST (read_alphabet_file_check)
+    {
+        size_t size = -1;
+        char ** content = (char **) malloc(sizeof(char *));
+        read_file("test-data/alphabet-file", content, &size);
+        ck_assert_int_eq(size, 26);
+        ck_assert_str_eq(*content, "abcdefghijklmnopqrstuvwxyz");
+    }END_TEST
 
 Suite *common_suite(void) {
     Suite *s = suite_create("Common");
@@ -27,7 +56,10 @@ Suite *common_suite(void) {
     /* Core test case */
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core, setup, teardown);
-    tcase_add_test(tc_core, sanity_chech);
+    tcase_add_test(tc_core, sanity_check);
+    tcase_add_test(tc_core, read_empty_file_check);
+    tcase_add_test(tc_core, read_small_file_check);
+    tcase_add_test(tc_core, read_alphabet_file_check);
     suite_add_tcase(s, tc_core);
 
     return s;
@@ -62,9 +94,12 @@ Suite *gpu_suite(void) {
 
 int main(void) {
     int number_failed;
-    Suite *s = common_suite();
-    SRunner *sr = srunner_create(s);
-    srunner_run_all(sr, CK_NORMAL);
+    Suite *common_suit = common_suite();
+    SRunner *sr = srunner_create(common_suit);
+    Suite *gpu_suit = gpu_suite();
+    srunner_add_suite(sr, gpu_suit);
+
+    srunner_run_all(sr, CK_VERBOSE);
     number_failed = srunner_ntests_failed(sr);
     srunner_free(sr);
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

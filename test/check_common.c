@@ -103,6 +103,33 @@ START_TEST (gpu_hash_check)
 
     }END_TEST
 
+START_TEST (gpu_count_hash_values_check)
+    {
+        ck_assert_int_eq(prepare_device("../src/join_kernel.cl", "count_hash_values"), 0);
+
+        int hashed_data[4] = { 1, 2, 3, 4 };
+        log_debug("created data");
+        int * counts;
+        counts = (int *) malloc(sizeof(int) * 4);
+        log_debug("created pointer to hash table");
+        log_debug("allocated hash table");
+        counts[0] = 100;
+        counts[1] = 120;
+        counts[2] = 120;
+        counts[3] = 130;
+        log_debug("initialized hash table");
+        int size = -1;
+        build_hash_table(4, hashed_data, 4, counts);
+        log_debug("called build_hash_table");
+
+        ck_assert_int_eq(counts[0], naive_hash(hashed_data[0]));
+        ck_assert_int_eq(counts[1], naive_hash(hashed_data[1]));
+        ck_assert_int_eq(counts[2], naive_hash(hashed_data[2]));
+        ck_assert_int_eq(counts[3], naive_hash(hashed_data[3]));
+        log_debug("checked all assertions");
+
+    }END_TEST
+
 Suite *gpu_suite(void) {
     Suite *s = suite_create("GPU");
 

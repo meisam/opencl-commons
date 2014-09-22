@@ -328,22 +328,28 @@ cl_int gpu_prefix_sum(cl_mem d_counts_buffer, cl_mem d_prefix_sum_buffer,
     return CL_SUCCESS;
 }
 
-void prefix_sum(size_t counts_size, int* counts, int *prefix_sums) {
+void prefix_sum(size_t counts_size, int* counts, unsigned long *prefix_sums) {
     cl_mem d_counts;         // device memory used for the input data
     cl_mem d_prefix_sums; // device memory used for the hashed output data
 
     d_counts = clCreateBuffer(context, CL_MEM_READ_ONLY,
             sizeof(int) * counts_size, NULL, NULL);
-    d_prefix_sums = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-            sizeof(int) * counts_size, NULL, NULL);
+    d_prefix_sums = clCreateBuffer(context, CL_MEM_READ_WRITE,
+            sizeof(unsigned long) * counts_size, NULL, NULL);
 
     cl_int err = 0;
     err = clEnqueueWriteBuffer(commands, d_counts, CL_TRUE, 0,
             sizeof(int) * counts_size, counts, 0, NULL, NULL);
 
     err = gpu_prefix_sum(d_counts, d_prefix_sums, counts_size);
+
+    int stride = 0;
+    for (stride = 1; stride < counts_size; stride <<= 1) {
+        err = gpu_prefix_sum(d_counts, d_prefix_sums, counts_size);
+    }
+
     err = clEnqueueReadBuffer(commands, d_prefix_sums, CL_TRUE, 0,
-            sizeof(int) * counts_size, prefix_sums, 0, NULL, NULL);
+            sizeof(unsigned long) * counts_size, prefix_sums, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
         printf("Error: Failed to read output array! %d\n", err);
         return;

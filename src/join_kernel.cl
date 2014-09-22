@@ -28,14 +28,21 @@ __kernel void count_hash_values(__global int* hashed_data, __global int* counts)
 }
 
 /// Asumes that size of data is same as numbeur of threads launched.
-__kernel void prefix_sum(__global int* counts, __global int* prefix_sum) {
+__kernel void prefix_sum_init(__global int* counts, __global unsigned long* prefix_sum) {
     int thread_idx = get_global_id(0);
     int n = get_global_size(0);
     prefix_sum[thread_idx] = (thread_idx > 0)? counts[thread_idx-1]: 0;
-    int stride = 0;
-    for (stride = 1; stride < n; stride <<=  1){
+}
+
+/// Asumes that size of data is same as numbeur of threads launched.
+__kernel void prefix_sum_stride(__global int* counts, __global unsigned long* prefix_sum, const int stride) {
+    int thread_idx = get_global_id(0);
+    int n = get_global_size(0);
+        unsigned long my_sum = prefix_sum[thread_idx];
+        unsigned long neighbors_sum = prefix_sum[thread_idx - stride];
+        barrier(CLK_GLOBAL_MEM_FENCE);
         if (thread_idx >= stride) {
-            prefix_sum[thread_idx]  += prefix_sum[thread_idx - stride];
+            prefix_sum[thread_idx]  = my_sum + neighbors_sum;
         }
         barrier(CLK_GLOBAL_MEM_FENCE);
     }  

@@ -130,6 +130,37 @@ START_TEST (gpu_count_hash_values_check)
 
     }END_TEST
 
+START_TEST (gpu_prefix_sum_check)
+    {
+        ck_assert_int_eq(prepare_device("../src/join_kernel.cl", "prefix_sum"),
+                0);
+
+        int counts[4] = { 1, 2, 1, 2 };
+        log_debug("created data");
+        int * prefix_sums;
+        prefix_sums = (int *) malloc(sizeof(int) * 3);
+        log_debug("created pointer to hash table");
+        log_debug("allocated hash table");
+        prefix_sums[0] = -1;
+        prefix_sums[1] = -1;
+        prefix_sums[2] = -1;
+        log_debug("initialized cout values");
+        int size = -1;
+        prefix_sum(4, counts, prefix_sums);
+        log_debug("called build_hash_table");
+
+        int i;
+        for (i = 0; i < 4; i++) {
+            log_debug("PREFIX SUM %d = %d", i, prefix_sums[i]);
+        }
+        ck_assert_int_eq(prefix_sums[3], 4);
+        ck_assert_int_eq(prefix_sums[2], 3);
+        ck_assert_int_eq(prefix_sums[1], 1);
+        ck_assert_int_eq(prefix_sums[0], 0);
+        log_debug("checked all assertions");
+
+    }END_TEST
+
 Suite *gpu_suite(void) {
     Suite *s = suite_create("GPU");
 
@@ -139,6 +170,7 @@ Suite *gpu_suite(void) {
     tcase_add_test(tc_gpu, gpu_sanity_check);
     tcase_add_test(tc_gpu, gpu_hash_check);
     tcase_add_test(tc_gpu, gpu_count_hash_values_check);
+    tcase_add_test(tc_gpu, gpu_prefix_sum_check);
     suite_add_tcase(s, tc_gpu);
 
     return s;

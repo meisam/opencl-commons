@@ -190,11 +190,6 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
     cl_mem d_data_buffer;         // device memory used for the input data
     cl_mem d_hashed_data_buffer; // device memory used for the hashed output data
 
-    int i = 0;
-    for (i = 0; i < hash_table_size; i++) {
-        printf("The value in hash table before hashing is %d\n", hash_table[i]);
-
-    }
     d_data_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY,
             sizeof(int) * data_size, NULL, NULL);
     d_hashed_data_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
@@ -230,11 +225,6 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
 
     err = clEnqueueReadBuffer(commands, d_hashed_data_buffer, CL_TRUE, 0,
             sizeof(int) * hash_table_size, hash_table, 0, NULL, NULL);
-
-    for (i = 0; i < hash_table_size; i++) {
-        printf("The value in hash table after hashing is %d\n", hash_table[i]);
-    }
-
     if (err != CL_SUCCESS) {
         printf("Error: Failed to read output array! %d\n", err);
         return;

@@ -245,7 +245,7 @@ void build_hash_table(size_t data_size, int* data, size_t hash_table_size,
 int __main(int argc, char **argv) {
 
     log_debug("Start of execution.");
-    prepare_device(argv[1], "sort");
+    prepare_device(argv[1], "join");
 
     struct table_schema_t *lineorder_table = get_lineorder_table_shcema();
     struct table_data_t *lineorder_data;
@@ -269,13 +269,13 @@ int __main(int argc, char **argv) {
     probe_data = (int *) malloc(sizeof(int) * DATA_SIZE * SCALE);
     char* results;         // The join results
     results = (char *) malloc(sizeof(char) * DATA_SIZE * SCALE);
-    unsigned int correct;              // number of correct results returned
+    unsigned int correct;          // number of correct results returned
 
 // Validate our results
 //// Create the input and output arrays in device memory for our calculation
-    cl_mem d_build_buffer;         // device memory used for the input array
-    cl_mem d_probe_buffer;        // device memory used for the output array
-    cl_mem d_join_result_buffer;  // device memory used for the output array
+    cl_mem d_build_buffer;     // device memory used for the input array
+    cl_mem d_probe_buffer;    // device memory used for the output array
+    cl_mem d_join_result_buffer; // device memory used for the output array
 
     //
     const unsigned int probe_size = DATA_SIZE;
@@ -310,7 +310,8 @@ int __main(int argc, char **argv) {
         // Write our data set into the input array in device memory
         //
         err = clEnqueueWriteBuffer(commands, d_probe_buffer, CL_TRUE, 0,
-                sizeof(int) * count, &probe_data[i * probe_size], 0, NULL,
+                sizeof(int) * count, &probe_data[i * probe_size], 0,
+                NULL,
                 NULL);
         if (err != CL_SUCCESS) {
             printf("Error: Failed to write to source array!\n");
@@ -350,7 +351,7 @@ int __main(int argc, char **argv) {
                 0,
                 NULL, NULL);
         if (err) {
-            printf("Error: Failed to execute kernel!\n");
+            printf("Error: (error code %d) Failed to execute kernel!\n", err);
             return EXIT_FAILURE;
         }
 
@@ -360,9 +361,9 @@ int __main(int argc, char **argv) {
 
         // Read back the results from the device to verify the output
         //
-        err = clEnqueueReadBuffer(commands, d_join_result_buffer, CL_TRUE, 0,
-                sizeof(char) * count, &results[i * DATA_SIZE], 0, NULL,
-                NULL);
+        err = clEnqueueReadBuffer(commands, d_join_result_buffer,
+        CL_TRUE, 0, sizeof(char) * count, &results[i * DATA_SIZE], 0, NULL,
+        NULL);
         if (err != CL_SUCCESS) {
             printf("Error: Failed to read output array! %d\n", err);
             exit(1);

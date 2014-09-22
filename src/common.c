@@ -57,14 +57,14 @@ int read_file(char *file_path, char **file_buffer, size_t *file_size) {
     return 0;
 }
 
-int prepare_device(int argc, char** argv) {
+int prepare_device(char* kerenel_path, char * kernel_name) {
     int err;                           // error code returned from API calls
     char **program_buffer;
     size_t *program_size;
 
     program_size = (size_t *) malloc(sizeof(size_t));
     program_buffer = (char **) malloc(sizeof(char *));
-    err = read_file(argv[1], program_buffer, program_size);
+    err = read_file(kerenel_path, program_buffer, program_size);
     if (err) {
         log_debug("An error occurred in reading the file");
         return err;
@@ -186,7 +186,7 @@ int prepare_device(int argc, char** argv) {
 
 // Create the compute kernel in the program we wish to run
 //
-    kernel = clCreateKernel(program, "sort", &err);
+    kernel = clCreateKernel(program, kernel_name, &err);
     if (!kernel || err != CL_SUCCESS) {
         printf("Error: Failed to create compute kernel!\n");
         exit(1);

@@ -36,6 +36,6 @@ size_t local;                   // local domain size for our calculation
 
 int read_file(char *file_path, char **file_buffer, size_t *file_size);
 
-int prepare_device(int argc, char** argv);
+int prepare_device(char* kernel_path, char * kernel);
 
 #endif /* COMMON_H_ */

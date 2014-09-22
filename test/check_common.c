@@ -162,10 +162,10 @@ START_TEST (gpu_prefix_sum_check)
     }END_TEST
 
 Suite *gpu_suite(void) {
-    Suite *s = suite_create("GPU");
+    Suite *s = suite_create("GPU test suite");
 
     /* Core test case */
-    TCase *tc_gpu = tcase_create("GPU");
+    TCase *tc_gpu = tcase_create("GPU testcases");
     tcase_add_checked_fixture(tc_gpu, setup, teardown);
     tcase_add_test(tc_gpu, gpu_sanity_check);
     tcase_add_test(tc_gpu, gpu_hash_check);

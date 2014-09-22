@@ -33,6 +33,33 @@ Suite *common_suite(void) {
     return s;
 }
 
+START_TEST (gpu_sanity_check)
+    {
+        fail_if(1 != 1);
+    }END_TEST
+
+START_TEST (gpu_hash_check)
+    {
+        int data[4] = { 1, 2, 3, 4 };
+        int hashed_data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+        int size = -1;
+        build_hash_table(4, data, 8, hashed_data);
+        ck_assert_int_eq(hashed_data[0], 2);
+    }END_TEST
+
+Suite *gpu_suite(void) {
+    Suite *s = suite_create("GPU");
+
+    /* Core test case */
+    TCase *tc_gpu = tcase_create("GPU");
+    tcase_add_checked_fixture(tc_gpu, setup, teardown);
+    tcase_add_test(tc_gpu, gpu_sanity_check);
+    tcase_add_test(tc_gpu, gpu_hash_check);
+    suite_add_tcase(s, tc_gpu);
+
+    return s;
+}
+
 int main(void) {
     int number_failed;
     Suite *s = common_suite();

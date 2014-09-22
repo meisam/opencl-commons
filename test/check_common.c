@@ -137,8 +137,8 @@ START_TEST (gpu_prefix_sum_check)
 
         int counts[4] = { 1, 2, 1, 2 };
         log_debug("created data");
-        int * prefix_sums;
-        prefix_sums = (int *) malloc(sizeof(int) * 3);
+        unsigned long * prefix_sums;
+        prefix_sums = (unsigned long *) malloc(sizeof(unsigned long) * 3);
         log_debug("created pointer to hash table");
         log_debug("allocated hash table");
         prefix_sums[0] = -1;
@@ -161,6 +161,41 @@ START_TEST (gpu_prefix_sum_check)
 
     }END_TEST
 
+#define LARGE_SIZE (1<<10)
+
+START_TEST (gpu_prefix_sum_huge_check)
+    {
+        ck_assert_int_eq(prepare_device("../src/join_kernel.cl", "prefix_sum"),
+                0);
+
+        int* counts;
+
+        counts = (int *) malloc(sizeof(int) * LARGE_SIZE);
+        int i = 0;
+        for (i = 0; i < LARGE_SIZE; i++) {
+            counts[i] = 1;
+        }
+        unsigned long * prefix_sums;
+        prefix_sums = (unsigned long *) malloc(
+                sizeof(unsigned long) * LARGE_SIZE);
+
+        for (i = 0; i < LARGE_SIZE; i++) {
+            prefix_sums[i] = -1;
+        }
+
+        int size = -1;
+        prefix_sum(LARGE_SIZE, counts, prefix_sums);
+
+        for (i = 0; i < LARGE_SIZE; i++) {
+            log_debug("PREFIX SUM %6d = %6d", i, prefix_sums[i]);
+        }
+
+        for (i = 0; i < LARGE_SIZE; i++) {
+            ck_assert_int_eq(prefix_sums[i], i);
+        }
+
+    }END_TEST
+
 Suite *gpu_suite(void) {
     Suite *s = suite_create("GPU test suite");
 
@@ -171,6 +206,7 @@ Suite *gpu_suite(void) {
     tcase_add_test(tc_gpu, gpu_hash_check);
     tcase_add_test(tc_gpu, gpu_count_hash_values_check);
     tcase_add_test(tc_gpu, gpu_prefix_sum_check);
+    tcase_add_test(tc_gpu, gpu_prefix_sum_huge_check);
     suite_add_tcase(s, tc_gpu);
 
     return s;
